@@ -1,5 +1,5 @@
 {
-  "name": "@etomon/etomon-desktop",
+  "name": "etomon-desktop",
   "version": "1.0.0",
   "description": "Desktop client for Etomon",
   "main": "main.js",
@@ -19,9 +19,12 @@
   "devDependencies": {
     "@electron-forge/cli": "^6.0.0-beta.54",
     "@electron-forge/maker-deb": "^6.0.0-beta.54",
+    "@electron-forge/maker-dmg": "^6.0.0-beta.54",
     "@electron-forge/maker-rpm": "^6.0.0-beta.54",
     "@electron-forge/maker-squirrel": "^6.0.0-beta.54",
     "@electron-forge/maker-zip": "^6.0.0-beta.54",
+    "@electron-forge/publisher-github": "^6.0.0-beta.54",
+    "@electron-forge/publisher-s3": "^6.0.0-beta.54",
     "electron": "^11.0.4"
   },
   "scripts": {
@@ -32,35 +35,5 @@
   },
   "author": "Etomon Team <open-source@etomon.com>",
   "license": "GPL-3.0",
-  "homepage": "https://bitbucket.org/etomon/etomon-electron#readme",
-  "config": {
-    "forge": {
-      "packagerConfig": {
-        "icon": "assets/icon",
-        "platform": "all"
-      },
-      "makers": [
-        {
-          "name": "@electron-forge/maker-squirrel",
-          "config": {
-            "name": "etomon_electron"
-          }
-        },
-        {
-          "name": "@electron-forge/maker-zip",
-          "platforms": [
-            "darwin"
-          ]
-        },
-        {
-          "name": "@electron-forge/maker-deb",
-          "config": {}
-        },
-        {
-          "name": "@electron-forge/maker-rpm",
-          "config": {}
-        }
-      ]
-    }
-  }
+  "homepage": "https://bitbucket.org/etomon/etomon-electron#readme"
 }

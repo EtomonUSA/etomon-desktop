@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, autoUpdater } = require('electron');
 const contextMenu = require('electron-context-menu');
 
 contextMenu();
@@ -13,6 +13,12 @@ let urls = {
 
 let mode = process.env.MODE || 'production';
 let siteUri = process.env.SITE_URI || urls[mode];
+if (mode === 'production') {
+    const feed = `${siteUri}/desktop/autoupdate/${process.platform}/${app.getVersion()}`;
+
+    autoUpdater.setFeedURL(feed);
+}
+
 let isDev = mode !== 'production';
 
 const isMac = process.platform === 'darwin';
