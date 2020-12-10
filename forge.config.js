@@ -47,13 +47,13 @@ module.exports = {
         }
     ],
     publishers: [
-        {
-            "name": "@electron-forge/publisher-s3",
-            "config": {
-                "bucket": "desktop.static.etomon.com",
-                "public": true
-            }
-        },
+        // {
+        //     "name": "@electron-forge/publisher-s3",
+        //     "config": {
+        //         "bucket": "desktop.static.etomon.com",
+        //         "public": true
+        //     }
+        // },
         {
             name: '@electron-forge/publisher-github',
             config: {
