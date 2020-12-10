@@ -1,13 +1,14 @@
 {
   "name": "etomon-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Desktop client for Etomon",
   "main": "main.js",
   "productName": "Etomon",
   "dependencies": {
     "dotenv": "^8.2.0",
     "electron-context-menu": "^2.3.0",
-    "electron-squirrel-startup": "^1.0.0"
+    "electron-squirrel-startup": "^1.0.0",
+    "update-electron-app": "^2.0.1"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
