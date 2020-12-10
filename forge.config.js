@@ -61,7 +61,7 @@ module.exports = {
                     owner: 'EtomonUSA',
                     name: 'etomon-desktop'
                 },
-                prerelease: true
+                prerelease: false
             }
         }
     ]
