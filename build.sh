@@ -1,5 +1,7 @@
 #!/bin/bash
 
+
+rm -rf out
 electron-forge publish --targets @electron-forge/maker-zip --platform linux
 electron-forge publish --targets @electron-forge/maker-zip --platform darwin
 #electron-forge make --targets @electron-forge/maker-zip --platform win32
