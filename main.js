@@ -13,7 +13,7 @@ let urls = {
 }
 
 let mode = process.env.MODE || 'production';
-let siteUri = process.env.SITE_URI || urls[mode];
+let siteUri = global.siteUri = process.env.SITE_URI || urls[mode];
 
 
 let isDev = mode !== 'production';
@@ -133,8 +133,8 @@ function createWindow () {
         width: 800,
         height: 600,
         webPreferences: {
-            nodeIntegration: false,
-            enableRemoteModule: false
+            nodeIntegration: true,
+            enableRemoteModule: true
         },
         title: 'Etomon',
         icon: __dirname + '/assets/icon'
@@ -142,7 +142,7 @@ function createWindow () {
 
     win.maximize();
 
-    win.loadURL(siteUri);
+    win.loadFile(require('path').join(__dirname, 'index.html'));
 }
 
 app.whenReady().then(createWindow)

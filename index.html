@@ -2,34 +2,61 @@
 <html>
 <head>
     <style>
-        /*iframe {*/
-        /*    width: 100%;*/
-        /*    height: 100%;*/
-        /*    border: none;*/
-        /*    display: block;*/
-        /*    position: fixed;*/
-        /*    !* top: 0; *!*/
-        /*    left: 0;*/
-        /*}*/
+        body {
+            background: white;
+        }
+        ul {
+            background: white;
+            display: flex;
+            padding: 0;
+            margin: 0;
+            flex-direction: row;
+        }
+        ol {
+            padding: 0;
+            margin: 3.5px 16px;
+            cursor: pointer;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            position: fixed;
+            /* top: 0; */
+            left: 0;
+        }
 
         #nav-ctrls-url {
             visibility: hidden;
         }
     </style>
+    <script>
+        window.onload = () => {
+            let {remote} = require('electron');
+            const siteUri = require('electron').remote.getGlobal('siteUri');
+            document.querySelector('iframe').setAttribute('src', siteUri);
+        }
+    </script>
 </head>
 <body>
-    <div id="nav-body-ctrls"></div>
-    <div id="nav-body-tabs"></div>
-    <div id="nav-body-views"></div>
-    <script>
-        const enav = new (require('electron-navigation')) ({
-            showAddTabButton: false,
-            showUrlBar: false,
-            showReloadButton: true,
-            showBackButton: true
-        });
-        enav.newTab(process.env.SITE_URI);
-    </script>
-    </body>
+<ul>
+    <ol onclick="history.back()">
+        <svg width="14" height="23" viewBox="0 0 14 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 2.05606L11.8766 0L0 11.5L11.8766 23L14 20.9439L4.24679 11.5L14 2.05606Z" fill="#3F3F3F"/>
+        </svg>
+    </ol>
+    <ol onclick="history.forward()">
+        <svg width="14" height="23" viewBox="0 0 14 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0 20.9439L2.12339 23L14 11.5L2.12339 0L0 2.05606L9.75321 11.5L0 20.9439Z" fill="#3F3F3F"/>
+        </svg>
+    </ol>
+    <ol onclick="document.location.reload()">
+        <svg width="23" height="23" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19.6198 3.37812C17.5341 1.29375 14.6717 0 11.4928 0C5.13508 0 0 5.14625 0 11.5C0 17.8538 5.13508 23 11.4928 23C16.858 23 21.3315 19.3344 22.6116 14.375H19.6198C18.4403 17.7244 15.247 20.125 11.4928 20.125C6.73171 20.125 2.86241 16.2581 2.86241 11.5C2.86241 6.74188 6.73171 2.875 11.4928 2.875C13.8806 2.875 16.0094 3.86687 17.5629 5.43375L12.9312 10.0625H23V0L19.6198 3.37812Z" fill="#3F3F3F"/>
+        </svg>
+    </ol>
+</ul>
+<iframe></iframe>
 </body>
 </html>
