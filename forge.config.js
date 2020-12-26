@@ -1,5 +1,6 @@
 module.exports = {
     "packagerConfig": {
+        "icon": "./assets/icon",
         "platform": "all",
         executableName: "etomon-desktop"
     },
