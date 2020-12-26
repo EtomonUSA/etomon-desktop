@@ -4,6 +4,8 @@ require('update-electron-app')();
 const { app, BrowserWindow, Menu, session } = require('electron');
 const contextMenu = require('electron-context-menu');
 
+// app.commandLine.appendSwitch('ignore-certificate-errors', 'true');
+
 contextMenu();
 
 let urls = {
@@ -138,7 +140,8 @@ function createWindow () {
         height: 600,
         webPreferences: {
             nodeIntegration: true,
-            enableRemoteModule: true
+            enableRemoteModule: true,
+            webSecurity: false
         },
         title: 'Etomon',
         icon: __dirname + '/assets/icon'
