@@ -1,7 +1,7 @@
 require('dotenv').config();
 require('update-electron-app')();
 
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, session } = require('electron');
 const contextMenu = require('electron-context-menu');
 
 contextMenu();
@@ -12,9 +12,9 @@ let urls = {
     'production': 'https://etomon.com'
 }
 
-let mode = process.env.MODE || 'production';
-let siteUri = global.siteUri = process.env.SITE_URI || urls[mode];
 
+let mode = process.env.MODE || 'docker-dev';
+let siteUri = global.siteUri = process.env.SITE_URI || urls[mode];
 
 let isDev = mode !== 'production';
 
@@ -129,6 +129,10 @@ const menu = Menu.buildFromTemplate(template)
 Menu.setApplicationMenu(menu)
 
 function createWindow () {
+    session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+        details.requestHeaders['etomon-desktop'] = '1';
+        callback({ cancel: false, requestHeaders: details.requestHeaders });
+    });
     win = new BrowserWindow({
         width: 800,
         height: 600,
