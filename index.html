@@ -17,46 +17,190 @@
             margin: 3.5px 16px;
             cursor: pointer;
         }
-        iframe {
+        webview {
             width: 100%;
             height: 100%;
             border: none;
-            display: block;
             position: fixed;
             /* top: 0; */
             left: 0;
         }
 
+        webview > iframe {
+            height: 100%;
+        }
+
         #nav-ctrls-url {
             visibility: hidden;
         }
+
+        #help {
+
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+        }
+
+        #help > * {
+            width: 100%;
+            height: 100%;
+            fill: #3F3F3F;
+        }
+
+        #record.recording circle {
+            fill: red;
+        }
     </style>
     <script>
+        let {remote} = require('electron');
+        const siteUri = remote.getGlobal('siteUri');
+        window.toggleRecord = () => {
+            let button = document.querySelector('#record');
+            if (button.classList.contains('recording')) {
+
+                button.classList.remove('recording');
+            } else {
+
+                button.classList.add('recording');
+            }
+        }
+
+        window.doNavigate = function (url = '') {
+            let u = siteUri+url;
+            try {
+
+                document.querySelector('webview').setAttribute('src', u);
+            } catch (e) {
+
+            }
+           try { document.querySelector('webview').loadUrl(u); }
+           catch (err) {}
+        }
+
+        window.doNavigateToContactUs = async function () {
+            const getLog = require('electron').remote.getGlobal('getLog');
+            const log = await getLog();
+            document.querySelector('body').setAttribute('style', 'cursor: wait');
+            doNavigate('/contact-us');
+
+            await document.querySelector('webview').executeJavaScript(`
+                (() => {
+                    window.log = (${JSON.stringify(log)});
+                })()
+            `)
+
+            document.querySelector('body').setAttribute('style', 'cursor: unset');
+        }
+
         window.onload = () => {
-            let {remote} = require('electron');
-            const siteUri = require('electron').remote.getGlobal('siteUri');
-            document.querySelector('iframe').setAttribute('src', siteUri);
+            document.querySelector('webview').addEventListener('dom-ready', async () => {
+                await remote.getGlobal('har')(
+                    document.querySelector('webview').getWebContentsId()
+                );
+            });
+
+            remote.getGlobal('setFn')(
+                {
+                    forwardWebview,
+                    backWebview,
+                    reloadWebview
+                }
+            );
+
+        }
+
+        function reloadWebview() {
+            return document.querySelector('webview').executeJavaScript(`
+                (() => {
+                    document.location.reload();
+                })()
+            `)
+        }
+
+        async function backWebview() {
+            await document.querySelector('webview').executeJavaScript(`
+                (() => {
+                    history.back()
+                })()
+            `);
+
+            return document.querySelector('webview').executeJavaScript(`
+                (() => {
+                    if (document.location.toString() === 'about:blank')
+                        document.location = '${siteUri}';
+                })()
+            `);
+        }
+
+        function forwardWebview() {
+            return document.querySelector('webview').executeJavaScript(`
+                (() => {
+                    history.forward()
+                })()
+            `)
         }
     </script>
 </head>
 <body>
 <ul>
-    <ol onclick="history.back()">
+    <ol onclick="backWebview()">
         <svg width="14" height="23" viewBox="0 0 14 23" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M14 2.05606L11.8766 0L0 11.5L11.8766 23L14 20.9439L4.24679 11.5L14 2.05606Z" fill="#3F3F3F"/>
         </svg>
     </ol>
-    <ol onclick="history.forward()">
+    <ol onclick="forwardWebview()">
         <svg width="14" height="23" viewBox="0 0 14 23" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M0 20.9439L2.12339 23L14 11.5L2.12339 0L0 2.05606L9.75321 11.5L0 20.9439Z" fill="#3F3F3F"/>
         </svg>
     </ol>
-    <ol onclick="document.location.reload()">
+    <ol onclick="reloadWebview()">
         <svg width="23" height="23" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M19.6198 3.37812C17.5341 1.29375 14.6717 0 11.4928 0C5.13508 0 0 5.14625 0 11.5C0 17.8538 5.13508 23 11.4928 23C16.858 23 21.3315 19.3344 22.6116 14.375H19.6198C18.4403 17.7244 15.247 20.125 11.4928 20.125C6.73171 20.125 2.86241 16.2581 2.86241 11.5C2.86241 6.74188 6.73171 2.875 11.4928 2.875C13.8806 2.875 16.0094 3.86687 17.5629 5.43375L12.9312 10.0625H23V0L19.6198 3.37812Z" fill="#3F3F3F"/>
         </svg>
     </ol>
+    <ol onclick="doNavigateToContactUs()">
+        <svg id="help" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 459.668 459.668" style="enable-background:new 0 0 459.668 459.668;" xml:space="preserve">
+<g id="XMLID_2_">
+	<g>
+		<g>
+			<path d="M359.574,297.043c-18.204,25.002-47.692,41.286-80.916,41.286h-46.618c-16.104,0-29.818-10.224-35.011-24.534     c-6.41-1.912-12.696-4.394-18.83-7.442c-12.99-6.454-24.785-15.198-35.168-26.03c-67.35,14.796-117.757,74.808-117.757,146.603     v9.384c0,12.9,10.458,23.358,23.358,23.358h362.403c12.9,0,23.358-10.458,23.358-23.358v-9.384     C434.392,371.464,404.309,323.032,359.574,297.043z"/>
+            <path d="M118.205,232.178c10.039,0,18.777-5.564,23.304-13.775c0.119,0.325,0.24,0.648,0.362,0.971     c0.036,0.097,0.072,0.194,0.108,0.291c10.62,27.954,31.284,51.388,58.532,61.627c6.59-10.471,18.243-17.435,31.53-17.435h46.618     c4.65,0,8.978-1.312,12.772-3.433c6.372-3.563,12.102-12.602,15.061-17.393c4.735-7.667,8.404-15.788,11.657-24.642     c1.828,3.32,4.342,6.208,7.354,8.471v11.431c0,25.83-21.014,46.845-46.845,46.845H232.04c-8.813,0-15.958,7.145-15.958,15.958     c0,8.814,7.145,15.958,15.958,15.958h46.618c43.429,0,78.761-35.332,78.761-78.761V226.86     c6.46-4.853,10.639-12.577,10.639-21.278v-48.119v-18.452c0-8.88-4.355-16.737-11.042-21.568C351.83,51.816,296.77,0,229.833,0     C162.895,0,107.836,51.816,102.65,117.442c-6.687,4.831-11.042,12.689-11.042,21.568v66.57     C91.608,220.311,103.575,232.178,118.205,232.178z M229.833,31.917c49.552,0,90.423,37.868,95.2,86.185     c-3.136,2.467-5.705,5.62-7.475,9.238c-15.058-39.286-48.672-66.638-87.726-66.638c-39.896,0-72.971,28.292-87.667,66.481     c-0.02,0.052-0.039,0.105-0.059,0.158c-1.77-3.618-4.339-6.771-7.475-9.238C139.411,69.785,180.281,31.917,229.833,31.917z"/>
+		</g>
+	</g>
+</g>
+            <g>
+</g>
+            <g>
+</g>
+            <g>
+</g>
+            <g>
+</g>
+            <g>
+</g>
+            <g>
+</g>
+            <g>
+</g>
+            <g>
+</g>
+            <g>
+</g>
+            <g>
+</g>
+            <g>
+</g>
+            <g>
+</g>
+            <g>
+</g>
+            <g>
+</g>
+            <g>
+</g>
+</svg>
+    </ol>
 </ul>
-<iframe></iframe>
+<webview style="height: 100%; width: 100%;" src="about:blank"  disablewebsecurity webpreferences="allowRunningInsecureContent"></webview>
 </body>
 </html>

@@ -5,9 +5,16 @@
   "main": "main.js",
   "productName": "Etomon",
   "dependencies": {
+    "@msgpack/msgpack": "^2.3.0",
+    "array-lru": "^1.1.1",
+    "chrome-har-capturer": "^0.13.9",
     "dotenv": "^8.2.0",
     "electron-context-menu": "^2.3.0",
     "electron-squirrel-startup": "^1.0.0",
+    "lodash": "^4.17.20",
+    "request": "^2.88.2",
+    "request-har": "^1.0.0",
+    "request-promise-native": "^1.0.9",
     "update-electron-app": "^2.0.1"
   },
   "publishConfig": {
