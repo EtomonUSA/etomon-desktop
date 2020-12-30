@@ -152,7 +152,7 @@ async function getLog() {
         });
     });
 
-    let data = Buffer.from(msgpack.encode(har));
+    let data = Buffer.from(JSON.stringify(har));
 
     return data;
 }
