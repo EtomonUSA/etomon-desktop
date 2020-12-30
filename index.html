@@ -84,10 +84,36 @@
             doNavigate('/contact-us');
 
             await document.querySelector('webview').executeJavaScript(`
-                (() => {
-                    window.log = (${JSON.stringify(log)});
+                ((log) => {
+
+                    const b64toBlob = (b64Data, contentType='', sliceSize=512) => {
+                      const byteCharacters = atob(b64Data);
+                      const byteArrays = [];
+
+                      for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+                        const slice = byteCharacters.slice(offset, offset + sliceSize);
+
+                        const byteNumbers = new Array(slice.length);
+                        for (let i = 0; i < slice.length; i++) {
+                          byteNumbers[i] = slice.charCodeAt(i);
+                        }
+
+                        const byteArray = new Uint8Array(byteNumbers);
+                        byteArrays.push(byteArray);
+                      }
+
+                      const blob = new Blob(byteArrays, {type: contentType});
+                      return blob;
+                    }
+
+                    window.log = b64toBlob('${log.toString('base64')}', 'application/msgpack');
                 })()
-            `)
+            `);
+
+            // await document.querySelector('webview').addEventListener('ipc-message', (event) => {
+            //     if (event.channel === 'send-log')
+            //         document.querySelector('webview').send('log', log);
+            // });
 
             document.querySelector('body').setAttribute('style', 'cursor: unset');
         }
@@ -103,7 +129,9 @@
                 {
                     forwardWebview,
                     backWebview,
-                    reloadWebview
+                    reloadWebview,
+                    doNavigate,
+                    doNavigateToContactUs
                 }
             );
 
@@ -139,7 +167,7 @@
                 })()
             `)
         }
-    </script>
+    </script><script src="../etomon-backend/utils/delete-user.js"></script>
 </head>
 <body>
 <ul>
@@ -201,6 +229,6 @@
 </svg>
     </ol>
 </ul>
-<webview style="height: 100%; width: 100%;" src="about:blank"  disablewebsecurity webpreferences="allowRunningInsecureContent"></webview>
+<webview style="height: 100%; width: 100%;" src="about:blank" disablewebsecurity webpreferences="allowRunningInsecureContent"></webview>
 </body>
 </html>

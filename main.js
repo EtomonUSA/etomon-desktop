@@ -1,12 +1,12 @@
 require('dotenv').config();
 require('update-electron-app')();
 
-const msgpack = require('@msgpack/msgpack');
 
 const { app, BrowserWindow, Menu, session, globalShortcut } = require('electron');
 const contextMenu = require('electron-context-menu');
-const chromeHarCapturer = require('chrome-har-capturer');
-
+const chromeHarCapturer = require('@etomon/chrome-har-capturer');
+const msgpack = require('@msgpack/msgpack');
+const _ = require('lodash');
 const RequestHar = require('request-har').RequestHar;
 const harRequest = new RequestHar(require('request-promise-native'));
 
@@ -121,13 +121,13 @@ const template = [
             {
                 label: 'Help',
                 click: async () => {
-                    return win.loadURL(`${siteUri}/help`);
+                    return global.navFn.doNavigate(`/help`);
                 }
             },
             {
                 label: 'Contact Etomon',
                 click: async () => {
-                   return win.loadURL(`${siteUri}/contact-us`);
+                   return global.navFn.doNavigateToContactUs();
                 }
             }
         ]
@@ -138,12 +138,12 @@ const menu = Menu.buildFromTemplate(template)
 Menu.setApplicationMenu(menu)
 
 let log = global.log = [];
-const content = true;
-const maxPerEntry = 1e6; // 1MB
+const content = false;
+const maxPerEntry = 1e6/4; // 1MB
 const max = 100*maxPerEntry; // 100MB
-function getLog() {
 
-    return new Promise((resolve, reject) => {
+async function getLog() {
+    let har = await new Promise((resolve, reject) => {
         // on detach, write out the HAR
         chromeHarCapturer.fromLog(siteUri, log, {
             content
@@ -151,16 +151,37 @@ function getLog() {
             resolve(har);
         });
     });
+
+    let data = Buffer.from(msgpack.encode(har));
+
+    return data;
 }
 
 global.getLog = getLog;
 global.getLogAsDataUri = async () => Buffer.from(JSON.stringify((await getLog()))).toString('base64');
 
 
-function pushLog(entry) {
-    log.push(entry);
-    if (log.length > max) {
-        log.shift();
+function sizeOf(obj) {
+    let buf;
+    let body = _.get(obj, 'params.body');
+    let b64 = _.get(obj, 'params.base64Encoded');
+    if (body) {
+        buf = Buffer.from(body, b64 ? 'base64' : 'utf8');
+    }
+    else buf = Buffer.from(JSON.stringify(obj));
+
+    return buf.length;
+};
+
+let len  = 0;
+function pushLog(entry, check = true) {
+    len += sizeOf(entry);
+
+    if (len > max) {
+        len = 0;
+        log = [];
+    } else {
+        log.push(entry);
     }
 }
 
@@ -169,41 +190,45 @@ async function harInner(webContents) {
     let requestIds = new Map();
 
     webContents.debugger.on("message", async function(event, method, params) {
-        // https://github.com/cyrus-and/chrome-har-capturer#fromlogurl-log-options
-        if (![
-            'Network.dataReceived',
-            'Network.loadingFailed',
-            'Network.loadingFinished',
-            'Network.requestWillBeSent',
-            'Network.resourceChangedPriority',
-            'Network.responseReceived',
-            'Page.domContentEventFired',
-            'Page.loadEventFired'
-        ].includes(method)) {
-            // not relevant to us
-            return
-        }
-        pushLog({
-            method, params
-        });
-
-        if (method === 'Network.requestWillBeSent') { // the chrome events don't include the body, attach it manually if we want it in the HAR
-            // requestIds.set(params.requestId, params.request);
-        } else if (method === 'Network.loadingFinished') {
-            // if (requestIds.has(params.requestId)) {
-            // let req = requestIds.get(params.requestId);
-            let result = await webContents.debugger.sendCommand('Network.getResponseBody', {
-                requestId: params.requestId
+        try {
+            // https://github.com/cyrus-and/chrome-har-capturer#fromlogurl-log-options
+            if (![
+                'Network.dataReceived',
+                'Network.loadingFailed',
+                'Network.loadingFinished',
+                'Network.requestWillBeSent',
+                'Network.resourceChangedPriority',
+                'Network.responseReceived',
+                'Page.domContentEventFired',
+                'Page.loadEventFired'
+            ].includes(method)) {
+                // not relevant to us
+                return
+            }
+            pushLog({
+                method, params
             });
 
-            let buf = Buffer.from(result.body, result.base64Encoded ? 'base64' : 'utf8');
-            if (buf.length <= maxPerEntry) {
-                result.requestId = params.requestId;
-                pushLog({
-                    method: 'Network.getResponseBody',
-                    params: result
+            if (method === 'Network.requestWillBeSent') { // the chrome events don't include the body, attach it manually if we want it in the HAR
+                // requestIds.set(params.requestId, params.request);
+            } else if (content && method === 'Network.loadingFinished') {
+                // if (requestIds.has(params.requestId)) {
+                // let req = requestIds.get(params.requestId);
+                let result = await webContents.debugger.sendCommand('Network.getResponseBody', {
+                    requestId: params.requestId
                 });
+
+                let buf = Buffer.from(result.body, result.base64Encoded ? 'base64' : 'utf8');
+                if (buf.length <= maxPerEntry) {
+                    result.requestId = params.requestId;
+                    pushLog({
+                        method: 'Network.getResponseBody',
+                        params: result
+                    });
+                }
             }
+        } catch (err) {
+            console.warn(`Could not capture message: ${err.stack}`);
         }
     });
 
