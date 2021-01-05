@@ -267,7 +267,7 @@ function createWindow () {
         icon: __dirname + '/assets/icon'
     });
     
-    win.loadURL(authUrl, { userAgent: 'Chrome' });
+    // win.loadURL(authUrl, { userAgent: 'Chrome' });
 
     global.har = harBase.bind(null, win);
 
