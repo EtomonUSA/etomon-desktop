@@ -265,7 +265,7 @@ function createWindow () {
         },
         title: 'Etomon',
         icon: __dirname + '/assets/icon'
-    })
+    });
 
     global.har = harBase.bind(null, win);
 
@@ -295,3 +295,5 @@ app.on('activate', () => {
         createWindow()
     }
 })
+
+app.userAgentFallback = "Chrome";
