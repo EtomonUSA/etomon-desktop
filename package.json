@@ -1,5 +1,5 @@
 {
-  "name": "@etomon/etomon-desktop",
+  "name": "etomon-desktop",
   "version": "1.4.0",
   "description": "Desktop client for Etomon",
   "main": "main.js",
