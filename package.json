@@ -1,9 +1,12 @@
 {
   "name": "etomon-desktop",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Desktop client for Etomon",
   "main": "main.js",
   "productName": "Etomon",
+  "bin": {
+    "etomon-desktop": "./bin/run"
+  },
   "dependencies": {
     "@etomon/chrome-har-capturer": "^0.13.10",
     "@msgpack/msgpack": "^2.3.0",

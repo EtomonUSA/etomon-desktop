@@ -143,7 +143,11 @@
                 }
             );
 
-            if (remote.getGlobal('mode') === 'local') {
+            if ([
+                'dev',
+                'docker-dev',
+                'local'
+            ].includes(remote.getGlobal('mode'))) {
                 document.querySelector('webview').openDevTools();
             }
         }
