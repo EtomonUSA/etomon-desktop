@@ -143,6 +143,9 @@
                 }
             );
 
+            if (remote.getGlobal('mode') === 'local') {
+                document.querySelector('webview').openDevTools();
+            }
         }
 
         function reloadWebview() {

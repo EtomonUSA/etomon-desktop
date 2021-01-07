@@ -1,4 +1,35 @@
 require('dotenv').config();
+const path = require('path');
+const os = require('os');
+const fs = require('fs');
+
+let paths = [
+    path.join('.', '.env'),
+    path.join('.', '.etomonrc'),
+    path.join('~', '.etomonrc'),
+];
+
+paths.reverse();
+
+for (let rcPath of paths) {
+    let envFile = rcPath
+        .replace(/\.\/|\.\\/g, process.cwd())
+        .replace(/\~/g, os.homedir());
+
+    require('dotenv').config({
+        path: envFile
+    });
+}
+
+
+let rcPath = require('path').join(
+    require('os').homedir(),
+
+)
+if (require('fs').existsSync(
+
+))
+
 require('update-electron-app')();
 
 
@@ -22,7 +53,7 @@ let urls = {
 
 
 
-let mode = process.env.MODE || 'docker-dev';
+let mode = global.mode = process.env.MODE || 'production';
 let siteUri = global.siteUri = process.env.SITE_URI || urls[mode];
 
 let isDev = mode !== 'production';
