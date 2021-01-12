@@ -46,7 +46,7 @@ const harRequest = new RequestHar(require('request-promise-native'));
 contextMenu();
 
 let urls = {
-    'docker-dev': 'https://etomon.zb.gy',
+    'docker-dev': 'https://dev-etomon.com',
     'local': 'http://localhost:4200',
     'production': 'https://etomon.com'
 }
