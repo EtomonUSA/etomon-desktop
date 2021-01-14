@@ -53,7 +53,7 @@ let urls = {
 
 
 
-let mode = global.mode = process.env.MODE || 'docker-dev';
+let mode = global.mode = process.env.MODE || 'production';
 let siteUri = global.siteUri = process.env.SITE_URI || urls[mode];
 
 let isDev = mode !== 'production';
