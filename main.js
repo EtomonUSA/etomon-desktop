@@ -51,7 +51,6 @@ let urls = {
     'production': 'https://etomon.com'
 }
 
-
 let mode = global.mode = 'production';//process.env.MODE || 'production';
 let siteUri = global.siteUri = process.env.SITE_URI || urls[mode];
 
