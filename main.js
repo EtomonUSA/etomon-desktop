@@ -55,10 +55,10 @@ let mode = global.mode = process.env.MODE || 'docker-dev';
 let siteUri = global.siteUri = process.env.SITE_URI || urls[mode];
 let isDev = mode !== 'production';
 
-global.bundles = {
-    js: require('fs').readFileSync(require('path').join(__dirname, 'bundle.js'), 'utf8'),
-    css: require('fs').readFileSync(require('path').join(__dirname, 'bundle.css'), 'utf8')
-};
+// global.bundles = {
+//     js: require('fs').readFileSync(require('path').join(__dirname, 'bundle.js'), 'utf8'),
+//     css: require('fs').readFileSync(require('path').join(__dirname, 'bundle.css'), 'utf8')
+// };
 const isMac = process.platform === 'darwin';
 let win;
 const template = [
@@ -383,8 +383,6 @@ async function createWindow () {
     win.maximize();
 
     win.loadURL(siteUri+'/nav');
-
-
 }
 
 let navFn;
@@ -404,9 +402,17 @@ global.setFn = (opts) => {
 }
 
 app.whenReady().then(() => {
+    const protocol = require('electron').protocol;
+
     globalShortcut.register("CommandOrControl+R", () => {
         return global.navFn.reloadWebview();
     });
+
+    protocol.registerBufferProtocol('etomon', async (request, callback) => {
+        callback(await require('./cacher').getPathFromCache(request.url, global.navFn && global.navFn.globalWait || void(0)));
+    });
+
+    require('./cacher').prepack().catch((err) => console.warn('error prepacking: '+err.stack));
 }).then(createWindow)
 
 app.on('window-all-closed', () => {
