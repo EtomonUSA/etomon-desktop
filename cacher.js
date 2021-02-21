@@ -6,8 +6,6 @@ const cheerio = require('cheerio');
 const fetch =  require('node-fetch');
 
 const msgpack = require('@msgpack/msgpack');
-const levelup = require('levelup');
-const leveldown = require('leveldown');
 
 
 let urls = {
