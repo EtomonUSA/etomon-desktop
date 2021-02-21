@@ -16,7 +16,7 @@ let urls = {
     'production': 'https://etomon.com'
 }
 
-let mode = global.mode = process.env.MODE || 'production';
+let mode = global.mode = process.env.MODE || 'docker-dev';
 let siteUri = global.siteUri = process.env.SITE_URI || urls[mode];
 let isDev = mode !== 'production';
 
