@@ -1,5 +1,9 @@
 #!/bin/bash
+
 rm -rf out
+
+node ./prepack.js
+
 npx electron-forge publish --targets @electron-forge/maker-zip --platform linux
 npx  electron-forge publish --targets @electron-forge/maker-zip --platform darwin
 #electron-forge make --targets @electron-forge/maker-zip --platform win32

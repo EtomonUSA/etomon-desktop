@@ -51,11 +51,14 @@ let urls = {
     'production': 'https://etomon.com'
 }
 
-let mode = global.mode = 'production';//process.env.MODE || 'production';
+let mode = global.mode = process.env.MODE || 'production';
 let siteUri = global.siteUri = process.env.SITE_URI || urls[mode];
-
 let isDev = mode !== 'production';
 
+global.bundles = {
+    js: require('fs').readFileSync(require('path').join(__dirname, 'bundle.js'), 'utf8'),
+    css: require('fs').readFileSync(require('path').join(__dirname, 'bundle.css'), 'utf8')
+};
 const isMac = process.platform === 'darwin';
 let win;
 const template = [
@@ -181,7 +184,7 @@ async function getLog() {
         });
     });
 
-    let data = Buffer.from(JSON.stringify(har));
+    let data = Buffer.from(msgpack.encode(har));
 
     return data;
 }
@@ -214,19 +217,60 @@ function pushLog(entry, check = true) {
     }
 }
 
+global.wireWebviewListeners = async function (id) {
+    const webContents = require('electron').webContents.fromId(id);
+
+    ipcBus = new (require('eventemitter2').EventEmitter2)({ wildcard: true, delimiter: '.' });
+
+
+    function webContentsForward(ev,method, ...params) {
+        webContents[method].apply(webContents, params);
+    }
+
+    ipcBus.on('globalWait', (ev, on) => global.navFn.staticGlobalWait(on));
+    ipcBus.on('navbarOptions', (ev, opts) => {
+        opts = {
+            ...(opts || {}),
+            ...defaultNavbarOpts
+        };
+        if (JSON.stringify(opts) === optsHash) return;
+
+        optsHash = JSON.stringify(opts);
+
+        return global.navFn && global.navFn.navbarInject && global.navFn.navbarInject(opts)
+    });
+
+    ipcBus.on('webContents', webContentsForward);
+    ipcBus.on('doNotify', (ev, ...args) => global.navFn.doNotify(...args));
+    ipcBus.on('notifyCompat', (ev, ...args) => {
+        return global.navFn.notifyCompat(...args)
+    });
+
+
+    await harInner(webContents);
+}
+
 async function harInner(webContents) {
     // debugger
     let requestIds = new Map();
 
     webContents.debugger.on("message", async function(event, method, params) {
         try {
+
+            if (method === 'Page.frameRequestedNavigation') {
+                global.navFn.globalWait && global.navFn.globalWait(true);
+            }
+            else if (method === 'Page.domContentEventFired') {
+                global.navFn.globalWait && global.navFn.globalWait(false);
+            }
+
             // https://github.com/cyrus-and/chrome-har-capturer#fromlogurl-log-options
             if (![
                 'Network.dataReceived',
                 'Network.loadingFailed',
                 'Network.loadingFinished',
                 'Network.requestWillBeSent',
-                'Network.resourceChangedPriority',
+                'Network.resourceCha gngedPriority',
                 'Network.responseReceived',
                 'Page.domContentEventFired',
                 'Page.loadEventFired'
@@ -267,8 +311,12 @@ async function harInner(webContents) {
     await webContents.debugger.sendCommand('Network.enable');
     let nav = await webContents.debugger.sendCommand('Page.getNavigationHistory');
 
-    if (nav.entries[nav.currentIndex].url === 'about:blank')
-        await webContents.debugger.sendCommand('Page.navigate', { url: siteUri });
+    if (nav.entries[nav.currentIndex].url === 'about:blank') {
+        await webContents.debugger.sendCommand('Page.navigate', {url: siteUri});
+        }
+    // } else if (nav.entries[nav.currentIndex].url === 'about:blank#nav') {
+    //     await webContents.debugger.sendCommand('Page.navigate', {url: siteUri+'/nav'});
+    // }
 }
 
 
@@ -278,7 +326,37 @@ async function harBase(browserWindow, id) {
     await harInner(webContents);
 }
 
-function createWindow () {
+const {ipcMain} = require('electron')
+let ipcBus = new (require('eventemitter2').EventEmitter2)({ wildcard: true, delimiter: '.' });
+
+const defaultNavbarOpts = {
+    forceShowOnDesktop: true,
+    isDesktop: true
+}
+
+let optsHash;
+
+
+
+ipcMain.on('ipc-message', (ev, arg) => {
+    let rpcMessage = msgpack.decode(arg);
+
+    ipcBus.emit(rpcMessage.method, ev, ...(rpcMessage.params || []));
+});
+
+function sendIpcMessage(method, ...args) {
+    const {webContents} = require('electron');
+    let wcs = webContents.getAllWebContents();
+    for (let wc of wcs) {
+        wc.send('ipc-message', msgpack.encode({
+            method,
+            params: args,
+            jsonrpc: '2.0'
+        }));
+    }
+}
+
+async function createWindow () {
     session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
         details.requestHeaders['etomon-desktop'] = '1';
         callback({ cancel: false, requestHeaders: details.requestHeaders });
@@ -296,15 +374,31 @@ function createWindow () {
         icon: __dirname + '/assets/icon'
     });
 
+    global.setTitle = (title) => win.title = title;
+
     global.har = harBase.bind(null, win);
 
     win.maximize();
 
-    win.loadFile(require('path').join(__dirname, 'index.html'));
+    win.loadURL(siteUri+'/nav');
+
+
 }
 
+let navFn;
+
+
 global.setFn = (opts) => {
-    global.navFn = opts;
+    if (opts && Object.keys(opts).length) {
+        global.navFn = navFn = opts;
+        global.navFn._globalWait = global.navFn.globalWait;
+        global.navFn.globalWait = (on) => {
+            sendIpcMessage('globalWait', on);
+            return global.navFn.staticGlobalWait(on);
+        }
+
+
+    }
 }
 
 app.whenReady().then(() => {
@@ -325,4 +419,4 @@ app.on('activate', () => {
     }
 })
 
-app.userAgentFallback = "Chrome";
+app.userAgentFallback = "Chrome; etomon-desktop";
