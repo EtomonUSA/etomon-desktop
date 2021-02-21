@@ -45,20 +45,14 @@ const harRequest = new RequestHar(require('request-promise-native'));
 
 contextMenu();
 
-let urls = {
-    'docker-dev': 'https://dev-etomon.com',
-    'local': 'http://localhost:4200',
-    'production': 'https://etomon.com'
-}
+const {
+    urls,
+    pkg,
+    mode,
+    siteUri,
+    isDev
+} = require('./version');
 
-let mode = global.mode = process.env.MODE || 'docker-dev';
-let siteUri = global.siteUri = process.env.SITE_URI || urls[mode];
-let isDev = mode !== 'production';
-
-// global.bundles = {
-//     js: require('fs').readFileSync(require('path').join(__dirname, 'bundle.js'), 'utf8'),
-//     css: require('fs').readFileSync(require('path').join(__dirname, 'bundle.css'), 'utf8')
-// };
 const isMac = process.platform === 'darwin';
 let win;
 const template = [

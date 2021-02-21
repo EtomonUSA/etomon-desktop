@@ -7,16 +7,13 @@ const fetch =  require('node-fetch');
 
 const msgpack = require('@msgpack/msgpack');
 
-
-let urls = {
-    'docker-dev': 'https://dev-etomon.com',
-    'local': 'http://localhost:4200',
-    'production': 'https://etomon.com'
-}
-
-let mode = global.mode = process.env.MODE || 'docker-dev';
-let siteUri = global.siteUri = process.env.SITE_URI || urls[mode];
-let isDev = mode !== 'production';
+const {
+    urls,
+    pkg,
+    mode,
+    siteUri,
+    isDev
+} = require('./version');
 
 async function get$(url = '/') {
     let homepage = await (await fetch(siteUri+url)).text();
