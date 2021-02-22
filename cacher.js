@@ -120,13 +120,14 @@ async function getPathFromCache(url, globalWait = ((() => {})), branch = mode) {
         cachedItem = await getItem(fileKey);
         if (!cachedItem) {
             let domain = siteUriParsed.host;
-            if (siteUriParsed.protocol === ('https:') && domain === 'etomon.com') {
-                url.host = 'assets.static.' + domain;
-                url.protocol = siteUriParsed.protocol;
-            } else {
+            // if (siteUriParsed.protocol === ('https:') && domain === 'etomon.com') {
+            //     url.host = 'assets.static.' + domain;
+            //     url.protocol = siteUriParsed.protocol;
+            // }
+            // else {
                 url.host = domain;
                 url.protocol = siteUriParsed.protocol
-            }
+            // }
 
             let finalUrl = Url.format(url);
             let resp = await fetch(finalUrl, {
