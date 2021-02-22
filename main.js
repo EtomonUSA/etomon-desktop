@@ -53,6 +53,15 @@ let {
     isDev
 } = require('./version')();
 
+async function clearAndReload() {
+    await Promise.all([
+        win.webContents.session.clearStorageData(),
+        require('fs-extra').remove(path.join(__dirname, 'assets', 'static'))
+    ]);
+    require('./cacher').prepack().catch((err) => console.warn(err.stack));
+    return win.loadURL(siteUri+'/nav');
+}
+
 const isMac = process.platform === 'darwin';
 let win;
 const template = [
@@ -161,8 +170,7 @@ const template = [
                 async click() {
                     mode = process.env.MODE = 'production';
                     siteUri = process.env.SITE_URI = urls[mode];
-                    win.loadURL(siteUri+'/nav');
-                    require('./cacher').prepack().catch((err) => console.warn(err.stack));
+                    await clearAndReload();
                 }
             },
             {
@@ -170,8 +178,7 @@ const template = [
                 async click() {
                     mode = process.env.MODE = 'docker-dev';
                     siteUri = process.env.SITE_URI = urls[mode];
-                    win.loadURL(siteUri+'/nav');
-                    require('./cacher').prepack().catch((err) => console.warn(err.stack));
+                    await clearAndReload();
                 }
             },
             process.env.ALLOW_SWITCH_LOCAL ? {
@@ -179,19 +186,13 @@ const template = [
                 async click() {
                     mode = process.env.MODE = 'local';
                     siteUri = process.env.SITE_URI = urls[mode];
-                    win.loadURL(siteUri+'/nav');
-                    require('./cacher').prepack().catch((err) => console.warn(err.stack));
+                    await clearAndReload();
                 }
             } : void(0),
             {
                 label: 'Clear Cache',
                 async click() {
-                    await Promise.all([
-                        win.webContents.session.clearStorageData(),
-                        require('fs-extra').remove(path.join(__dirname, 'assets', 'static'))
-                    ]);
-                    require('./cacher').prepack().catch((err) => console.warn(err.stack));
-                    return win.loadURL(siteUri+'/nav');
+                    await clearAndReload();
                 }
             }
         ].filter(Boolean)
