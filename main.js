@@ -45,13 +45,13 @@ const harRequest = new RequestHar(require('request-promise-native'));
 
 contextMenu();
 
-const {
+let {
     urls,
     pkg,
     mode,
     siteUri,
     isDev
-} = require('./version');
+} = require('./version')();
 
 const isMac = process.platform === 'darwin';
 let win;
@@ -155,8 +155,46 @@ const template = [
                 click: async () => {
                    return global.navFn.doNavigateToContactUs();
                 }
+            },
+            {
+                label: 'Switch to Production',
+                async click() {
+                    mode = process.env.MODE = 'production';
+                    siteUri = process.env.SITE_URI = urls[mode];
+                    win.loadURL(siteUri+'/nav');
+                    require('./cacher').prepack().catch((err) => console.warn(err.stack));
+                }
+            },
+            {
+                label: 'Switch to Development',
+                async click() {
+                    mode = process.env.MODE = 'docker-dev';
+                    siteUri = process.env.SITE_URI = urls[mode];
+                    win.loadURL(siteUri+'/nav');
+                    require('./cacher').prepack().catch((err) => console.warn(err.stack));
+                }
+            },
+            process.env.ALLOW_SWITCH_LOCAL ? {
+                label: 'Switch to Local',
+                async click() {
+                    mode = process.env.MODE = 'local';
+                    siteUri = process.env.SITE_URI = urls[mode];
+                    win.loadURL(siteUri+'/nav');
+                    require('./cacher').prepack().catch((err) => console.warn(err.stack));
+                }
+            } : void(0),
+            {
+                label: 'Clear Cache',
+                async click() {
+                    await Promise.all([
+                        win.webContents.session.clearStorageData(),
+                        require('fs-extra').remove(path.join(__dirname, 'assets', 'static'))
+                    ]);
+                    require('./cacher').prepack().catch((err) => console.warn(err.stack));
+                    return win.loadURL(siteUri+'/nav');
+                }
             }
-        ]
+        ].filter(Boolean)
     }
 ]
 
@@ -381,7 +419,7 @@ async function createWindow () {
     });
 
 
-    global.setTitle = (title) => win.title = title;
+    global.setTitle = (title) => win.title = `Etomon${title ? ' - '+title : ''}`;
 
     global.har = harBase.bind(null, win);
 

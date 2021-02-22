@@ -15,14 +15,30 @@ const {
     siteUri,
     isDev,
     noCache
-} = require('./version');
+} = require('./version')();
 
 async function get$(url = '/') {
+    const {
+        urls,
+        pkg,
+        mode,
+        siteUri,
+        isDev,
+        noCache
+    } = require('./version')();
     let homepage = await (await fetch(siteUri+url, { headers: { 'etomon-desktop': 1 } })).text();
     return cheerio.load(homepage);
 }
 
 async function getVersion() {
+    const {
+        urls,
+        pkg,
+        mode,
+        siteUri,
+        isDev,
+        noCache
+    } = require('./version')();
     return await (await fetch(siteUri+'/system/version')).json();
 }
 
@@ -30,6 +46,14 @@ async function getVersion() {
 async function getVersionKey() { return (await getVersion()).versionKey; }
 
 async function getItem(path) {
+    const {
+        urls,
+        pkg,
+        mode,
+        siteUri,
+        isDev,
+        noCache
+    } = require('./version')();
     if (noCache || !await fs.pathExists(path))
         return null;
 
@@ -43,6 +67,14 @@ async function getItem(path) {
 }
 
 async function putItem(path, item) {
+    const {
+        urls,
+        pkg,
+        mode,
+        siteUri,
+        isDev,
+        noCache
+    } = require('./version')();
     if (noCache)
         return;
     await fs.ensureFile(path);
@@ -55,12 +87,20 @@ async function putItem(path, item) {
 
 let lastSolidVersionKey;
 
-async function getPathFromCache(url, globalWait = ((() => {}))) {
+async function getPathFromCache(url, globalWait = ((() => {})), branch = mode) {
+    const {
+        urls,
+        pkg,
+        mode,
+        siteUri,
+        isDev,
+        noCache
+    } = require('./version')();
     url = Url.parse(url);
     let siteUriParsed = Url.parse(siteUri);
     let q = Query.parse(url.query);
     lastSolidVersionKey = q.versionKey || lastSolidVersionKey;
-    let versionKey =  q.versionKey || lastSolidVersionKey || await getVersionKey();
+    let versionKey =  `etomon-${mode}-`+(q.versionKey || lastSolidVersionKey || await getVersionKey());
 
     globalWait(true);
 
@@ -80,7 +120,7 @@ async function getPathFromCache(url, globalWait = ((() => {}))) {
         cachedItem = await getItem(fileKey);
         if (!cachedItem) {
             let domain = siteUriParsed.host;
-            if (siteUriParsed.protocol === ('https:')) {
+            if (siteUriParsed.protocol === ('https:') && domain === 'etomon.com') {
                 url.host = 'assets.static.' + domain;
                 url.protocol = siteUriParsed.protocol;
             } else {
@@ -89,7 +129,11 @@ async function getPathFromCache(url, globalWait = ((() => {}))) {
             }
 
             let finalUrl = Url.format(url);
-            let resp = await fetch(finalUrl);
+            let resp = await fetch(finalUrl, {
+                headers: {
+                    'etomon-desktop': 1
+                }
+            });
 
             let mimeType = resp.headers.get('content-type') || 'application/octet-stream';
             mimeType = mimeType.split(';').shift();
