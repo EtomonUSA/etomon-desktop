@@ -30,7 +30,8 @@ module.exports = {
                 format: 'ULFO',
                 "platforms": [
                     'darwin'
-                ]
+                ],
+                icon: 'assets/icon.icns'
             }
         },
         {

@@ -17,6 +17,7 @@
     "electron-squirrel-startup": "^1.0.0",
     "encoding-down": "^6.3.0",
     "eventemitter2": "^6.4.3",
+    "fs-extra": "^9.1.0",
     "lodash": "^4.17.20",
     "node-fetch": "^2.6.1",
     "request": "^2.88.2",
