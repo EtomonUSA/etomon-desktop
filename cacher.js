@@ -152,7 +152,11 @@ async function getPathFromCache(url, globalWait = ((() => {})), branch = mode) {
     }
 }
 
-async function prepack(pages = [ '/nav' ]) {
+async function prepack(pages = [
+    '/',
+    '/nav'
+]) {
+    let exclude = new Set();
     for (let page of pages) {
         let $ = await get$(page);
 
@@ -160,6 +164,9 @@ async function prepack(pages = [ '/nav' ]) {
 
         for (let ele of files) {
             let link = $(ele).attr('href') || $(ele).attr('src');
+            if (exclude.has(link)) continue;
+            else exclude.add(link);
+            console.log(link);
             if (!link || link.indexOf('/file') !== -1 || link.indexOf('public-photos') !== -1) {
                 continue;
             }
