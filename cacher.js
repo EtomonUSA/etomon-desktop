@@ -87,6 +87,8 @@ async function putItem(path, item) {
 
 let lastSolidVersionKey;
 
+let cdnResource = null
+
 async function getPathFromCache(url, globalWait = ((() => {})), branch = mode) {
     const {
         urls,

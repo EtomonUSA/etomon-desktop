@@ -1,56 +1,56 @@
 {
-  "name": "etomon-desktop",
-  "version": "2.2.1",
-  "description": "Desktop client for Etomon",
-  "main": "main.js",
-  "productName": "Etomon",
-  "bin": {
-    "etomon-desktop": "./bin/run"
-  },
-  "dependencies": {
-    "@etomon/chrome-har-capturer": "^0.13.10",
-    "@msgpack/msgpack": "^2.3.0",
-    "array-lru": "^1.1.1",
-    "cheerio": "^1.0.0-rc.5",
-    "dotenv": "^8.2.0",
-    "electron-context-menu": "^2.3.0",
-    "electron-squirrel-startup": "^1.0.0",
-    "encoding-down": "^6.3.0",
-    "eventemitter2": "^6.4.3",
-    "fs-extra": "^9.1.0",
-    "lodash": "^4.17.20",
-    "node-fetch": "^2.6.1",
-    "request": "^2.88.2",
-    "request-har": "^1.0.0",
-    "request-promise-native": "^1.0.9",
-    "update-electron-app": "^2.0.1",
-    "zstd-codec": "^0.1.2"
-  },
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/EtomonUSA/etomon-desktop.git"
-  },
-  "devDependencies": {
-    "@electron-forge/cli": "^6.0.0-beta.54",
-    "@electron-forge/maker-deb": "^6.0.0-beta.54",
-    "@electron-forge/maker-dmg": "^6.0.0-beta.54",
-    "@electron-forge/maker-rpm": "^6.0.0-beta.54",
-    "@electron-forge/maker-squirrel": "^6.0.0-beta.54",
-    "@electron-forge/maker-zip": "^6.0.0-beta.54",
-    "@electron-forge/publisher-github": "^6.0.0-beta.54",
-    "@electron-forge/publisher-s3": "^6.0.0-beta.54",
-    "electron": "^11.0.4"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make"
-  },
-  "author": "Etomon Team <open-source@etomon.com>",
-  "license": "GPL-3.0",
-  "homepage": "https://bitbucket.org/etomon/etomon-electron#readme"
+    "name": "etomon-desktop",
+    "version": "2.2.2",
+    "description": "Desktop client for Etomon",
+    "main": "main.js",
+    "productName": "Etomon",
+    "bin": {
+        "etomon-desktop": "./bin/run"
+    },
+    "dependencies": {
+        "@etomon/chrome-har-capturer": "^0.13.10",
+        "@msgpack/msgpack": "^2.3.0",
+        "array-lru": "^1.1.1",
+        "cheerio": "^1.0.0-rc.5",
+        "dotenv": "^8.2.0",
+        "electron-context-menu": "^2.3.0",
+        "electron-squirrel-startup": "^1.0.0",
+        "encoding-down": "^6.3.0",
+        "eventemitter2": "^6.4.3",
+        "fs-extra": "^9.1.0",
+        "lodash": "^4.17.20",
+        "node-fetch": "^2.6.1",
+        "request": "^2.88.2",
+        "request-har": "^1.0.0",
+        "request-promise-native": "^1.0.9",
+        "update-electron-app": "^2.0.1",
+        "zstd-codec": "^0.1.2"
+    },
+    "publishConfig": {
+        "registry": "https://registry.npmjs.org"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/EtomonUSA/etomon-desktop.git"
+    },
+    "devDependencies": {
+        "@electron-forge/cli": "^6.0.0-beta.54",
+        "@electron-forge/maker-deb": "^6.0.0-beta.54",
+        "@electron-forge/maker-dmg": "^6.0.0-beta.54",
+        "@electron-forge/maker-rpm": "^6.0.0-beta.54",
+        "@electron-forge/maker-squirrel": "^6.0.0-beta.54",
+        "@electron-forge/maker-zip": "^6.0.0-beta.54",
+        "@electron-forge/publisher-github": "^6.0.0-beta.54",
+        "@electron-forge/publisher-s3": "^6.0.0-beta.54",
+        "electron": "^11.0.4"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "electron-forge start",
+        "package": "electron-forge package",
+        "make": "electron-forge make"
+    },
+    "author": "Etomon Team <open-source@etomon.com>",
+    "license": "GPL-3.0",
+    "homepage": "https://bitbucket.org/etomon/etomon-electron#readme"
 }
