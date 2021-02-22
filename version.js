@@ -7,14 +7,17 @@ let urls = {
 
 let pkg = require('fs-extra').readJsonSync(require('path').join(__dirname, 'package.json'));
 
-let mode = global.mode = process.env.MODE || pkg.version.indexOf('-dev') !== -1 ? 'docker-dev' : 'production';
+let mode = global.mode = process.env.MODE || (pkg.version.indexOf('-dev') !== -1 ? 'docker-dev' : 'production');
 let siteUri = global.siteUri = process.env.SITE_URI || urls[mode];
 let isDev = mode !== 'production';
+
+let noCache = process.env.NO_CACHE;
 
 module.exports = {
     urls,
     pkg,
     mode,
     siteUri,
-    isDev
+    isDev,
+    noCache
 };

@@ -4,6 +4,7 @@ const  fs = require('fs-extra');
 const path = require('path');
 const cheerio = require('cheerio');
 const fetch =  require('node-fetch');
+const _ = require('lodash');
 
 const msgpack = require('@msgpack/msgpack');
 
@@ -12,11 +13,12 @@ const {
     pkg,
     mode,
     siteUri,
-    isDev
+    isDev,
+    noCache
 } = require('./version');
 
 async function get$(url = '/') {
-    let homepage = await (await fetch(siteUri+url)).text();
+    let homepage = await (await fetch(siteUri+url, { headers: { 'etomon-desktop': 1 } })).text();
     return cheerio.load(homepage);
 }
 
@@ -28,7 +30,7 @@ async function getVersion() {
 async function getVersionKey() { return (await getVersion()).versionKey; }
 
 async function getItem(path) {
-    if (!await fs.pathExists(path))
+    if (noCache || !await fs.pathExists(path))
         return null;
 
     let data = await fs.readFile(path);
@@ -41,11 +43,14 @@ async function getItem(path) {
 }
 
 async function putItem(path, item) {
+    if (noCache)
+        return;
     await fs.ensureFile(path);
     let data = item.data;
     await fs.writeFile(path, data);
-    delete item.data;
-    await fs.writeFile(path+'.etomon-cache-meta', msgpack.encode(item));
+    let encodeItem = _.cloneDeep(item);
+    delete encodeItem.data;
+    await fs.writeFile(path+'.etomon-cache-meta', msgpack.encode(encodeItem));
 }
 
 let lastSolidVersionKey;
@@ -85,6 +90,7 @@ async function getPathFromCache(url, globalWait = ((() => {}))) {
 
             let finalUrl = Url.format(url);
             let resp = await fetch(finalUrl);
+
             let mimeType = resp.headers.get('content-type') || 'application/octet-stream';
             mimeType = mimeType.split(';').shift();
             let data = Buffer.from(await (resp).arrayBuffer());
@@ -94,19 +100,27 @@ async function getPathFromCache(url, globalWait = ((() => {}))) {
         }
     } catch (err) { e = err; } finally {
         globalWait(false);
-        if (e) throw e;
-        else return cachedItem;
+        if (e)
+            throw e;
+        else
+            return cachedItem;
     }
 }
 
-async function prepack() {
-    let $ = await get$('/');
+async function prepack(pages = [ '/nav' ]) {
+    for (let page of pages) {
+        let $ = await get$(page);
 
-    let files = $('link[rel="preload"]');
+        let files = $('link[rel="preload"],link[rel="prefetch"]');
 
-    for (let ele of files) {
-        let link = $(ele).attr('href');
-        await getPathFromCache(link);
+        for (let ele of files) {
+            let link = $(ele).attr('href') || $(ele).attr('src');
+            if (!link || link.indexOf('/file') !== -1 || link.indexOf('public-photos') !== -1) {
+                continue;
+            }
+            try { await getPathFromCache(link); }
+            catch (err){}
+        }
     }
 }
 

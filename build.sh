@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm -rf out
+rm -rf out assets/static
 
 node ./prepack.js
 

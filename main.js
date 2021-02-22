@@ -218,7 +218,6 @@ global.wireWebviewListeners = async function (id) {
 
     ipcBus = new (require('eventemitter2').EventEmitter2)({ wildcard: true, delimiter: '.' });
 
-
     function webContentsForward(ev,method, ...params) {
         webContents[method].apply(webContents, params);
     }
@@ -241,6 +240,13 @@ global.wireWebviewListeners = async function (id) {
     ipcBus.on('notifyCompat', (ev, ...args) => {
         return global.navFn.notifyCompat(...args)
     });
+
+    ipcBus.on('webContentsMain', (ev, method, ...params) => {
+        if (method === 'loadURL') win.loadURL(...params);
+        else {
+            win.webContents[method].apply(win.webContents, params);
+        }
+    })
 
 
     await harInner(webContents);
@@ -266,7 +272,7 @@ async function harInner(webContents) {
                 'Network.loadingFailed',
                 'Network.loadingFinished',
                 'Network.requestWillBeSent',
-                'Network.resourceCha gngedPriority',
+                'Network.resourceChangedPriority',
                 'Network.responseReceived',
                 'Page.domContentEventFired',
                 'Page.loadEventFired'
@@ -370,6 +376,7 @@ async function createWindow () {
         icon: __dirname + '/assets/icon'
     });
 
+
     global.setTitle = (title) => win.title = title;
 
     global.har = harBase.bind(null, win);
@@ -388,10 +395,8 @@ global.setFn = (opts) => {
         global.navFn._globalWait = global.navFn.globalWait;
         global.navFn.globalWait = (on) => {
             sendIpcMessage('globalWait', on);
-            return global.navFn.staticGlobalWait(on);
+            return global.navFn && global.navFn.staticGlobalWait && global.navFn.staticGlobalWait(on);
         }
-
-
     }
 }
 
