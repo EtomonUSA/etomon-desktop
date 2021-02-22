@@ -55,8 +55,8 @@ let {
 
 async function clearAndReload() {
     await Promise.all([
-        win.webContents.session.clearStorageData(),
-        require('fs-extra').remove(path.join(__dirname, 'assets', 'static'))
+        win.webContents.session.clearStorageData().catch(err => console.error(err.stack)),
+        require('fs-extra').remove(path.join(__dirname, 'assets', 'static')).catch(err => console.error(err.stack))
     ]);
     require('./cacher').prepack().catch((err) => console.warn(err.stack));
     return win.loadURL(siteUri+'/nav');

@@ -166,7 +166,7 @@ async function prepack(pages = [
             let link = $(ele).attr('href') || $(ele).attr('src');
             if (exclude.has(link)) continue;
             else exclude.add(link);
-            console.log(link);
+            // console.log(link);
             if (!link || link.indexOf('/file') !== -1 || link.indexOf('public-photos') !== -1) {
                 continue;
             }
