@@ -4,9 +4,9 @@ const os = require('os');
 const fs = require('fs');
 
 let paths = [
-    path.join('.', '.env'),
-    path.join('.', '.etomonrc'),
-    path.join('~', '.etomonrc'),
+    // path.join('.', '.env'),
+    // path.join('.', '.etomonrc'),
+    // path.join('~', '.etomonrc'),
 ];
 
 paths.reverse();
@@ -128,10 +128,7 @@ const template = [
             { role: 'zoomIn' },
             { role: 'zoomOut' },
             { type: 'separator' },
-            (
-                isDev ?
-                    { role: 'toggleDevTools' } : null
-            )
+            { role: 'toggleDevTools' }
         ].filter(Boolean)
     },
     // { role: 'windowMenu' }

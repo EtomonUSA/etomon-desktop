@@ -141,7 +141,7 @@ async function getPathFromCache(url, globalWait = ((() => {})), branch = mode) {
             let data = Buffer.from(await (resp).arrayBuffer());
 
             cachedItem = { mimeType, data };
-            await putItem(fileKey, cachedItem)
+            putItem(fileKey, cachedItem).catch(err => console.error(err.stack));
         }
     } catch (err) { e = err; } finally {
         globalWait(false);
