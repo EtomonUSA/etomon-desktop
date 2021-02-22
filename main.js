@@ -212,41 +212,46 @@ function pushLog(entry, check = true) {
         log.push(entry);
     }
 }
+let ipcBus = new (require('eventemitter2').EventEmitter2)({ wildcard: true, delimiter: '.' });
+
+ipcBus.on('globalWait', (ev, on) => global.navFn && global.navFn.staticGlobalWait(on));
+ipcBus.on('navbarOptions', (ev, opts) => {
+    opts = {
+        ...(opts || {}),
+        ...defaultNavbarOpts
+    };
+    if (JSON.stringify(opts) === optsHash) return;
+
+    optsHash = JSON.stringify(opts);
+
+    return global.navFn && global.navFn.navbarInject && global.navFn.navbarInject(opts)
+});
+
+ipcBus.on('doNotify', (ev, ...args) => global.navFn && global.navFn.doNotify(...args));
+ipcBus.on('notifyCompat', (ev, ...args) => {
+    return global.navFn && global.navFn.notifyCompat(...args)
+});
+
+ipcBus.on('webContentsMain', (ev, method, ...params) => {
+    if (method === 'loadURL') win.loadURL(...params);
+    else {
+        win.webContents[method].apply(win.webContents, params);
+    }
+})
+
 
 global.wireWebviewListeners = async function (id) {
     const webContents = require('electron').webContents.fromId(id);
 
-    ipcBus = new (require('eventemitter2').EventEmitter2)({ wildcard: true, delimiter: '.' });
-
     function webContentsForward(ev,method, ...params) {
+        if (webContents.isDestroyed())
+            return ipcBus.removeListener('webContents', webContentsForward);
+
         webContents[method].apply(webContents, params);
     }
 
-    ipcBus.on('globalWait', (ev, on) => global.navFn.staticGlobalWait(on));
-    ipcBus.on('navbarOptions', (ev, opts) => {
-        opts = {
-            ...(opts || {}),
-            ...defaultNavbarOpts
-        };
-        if (JSON.stringify(opts) === optsHash) return;
-
-        optsHash = JSON.stringify(opts);
-
-        return global.navFn && global.navFn.navbarInject && global.navFn.navbarInject(opts)
-    });
-
     ipcBus.on('webContents', webContentsForward);
-    ipcBus.on('doNotify', (ev, ...args) => global.navFn.doNotify(...args));
-    ipcBus.on('notifyCompat', (ev, ...args) => {
-        return global.navFn.notifyCompat(...args)
-    });
 
-    ipcBus.on('webContentsMain', (ev, method, ...params) => {
-        if (method === 'loadURL') win.loadURL(...params);
-        else {
-            win.webContents[method].apply(win.webContents, params);
-        }
-    })
 
 
     await harInner(webContents);
@@ -329,7 +334,6 @@ async function harBase(browserWindow, id) {
 }
 
 const {ipcMain} = require('electron')
-let ipcBus = new (require('eventemitter2').EventEmitter2)({ wildcard: true, delimiter: '.' });
 
 const defaultNavbarOpts = {
     forceShowOnDesktop: true,
