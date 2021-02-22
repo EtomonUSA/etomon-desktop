@@ -1,6 +1,6 @@
 {
   "name": "etomon-desktop",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Desktop client for Etomon",
   "main": "main.js",
   "productName": "Etomon",
