@@ -153,13 +153,13 @@ const template = [
             {
                 label: 'Help',
                 click: async () => {
-                    return global.navFn.doNavigate(`/help`);
+                    return ipcBus.emitAsync('webContents', void(0), 'loadURL', `${siteUri}/help`);
                 }
             },
             {
                 label: 'Contact Etomon',
                 click: async () => {
-                   return global.navFn.doNavigateToContactUs();
+                    return ipcBus.emitAsync('webContents', void(0), 'loadURL', `${siteUri}/contact-us`);
                 }
             },
             {
@@ -268,12 +268,27 @@ ipcBus.on('notifyCompat', (ev, ...args) => {
     return global.navFn && global.navFn.notifyCompat(...args)
 });
 
+
 ipcBus.on('webContentsMain', (ev, method, ...params) => {
-    if (method === 'loadURL') win.loadURL(...params);
+    if (method === 'loadURL') {
+
+        return win.loadURL(...params);
+    }
     else {
         win.webContents[method].apply(win.webContents, params);
     }
 })
+
+function wireLoad(webContents) {
+    if (webContents.isDestroyed()) return;
+
+    webContents.once('did-start-loading', () => {
+        global.navFn && global.navFn.globalWait && global.navFn.globalWait(true);
+    });
+    webContents.once('did-stop-loading', () => {
+        global.navFn && global.navFn.globalWait && global.navFn.globalWait(false);
+    });
+}
 
 
 global.wireWebviewListeners = async function (id) {
@@ -287,7 +302,7 @@ global.wireWebviewListeners = async function (id) {
     }
 
     ipcBus.on('webContents', webContentsForward);
-
+    wireLoad(webContents);
 
 
     await harInner(webContents);
@@ -300,12 +315,12 @@ async function harInner(webContents) {
     webContents.debugger.on("message", async function(event, method, params) {
         try {
 
-            if (method === 'Page.frameRequestedNavigation') {
-                global.navFn.globalWait && global.navFn.globalWait(true);
-            }
-            else if (method === 'Page.domContentEventFired') {
-                global.navFn.globalWait && global.navFn.globalWait(false);
-            }
+            // if (method === 'Page.frameRequestedNavigation') {
+            //     global.navFn.globalWait && global.navFn.globalWait(true);
+            // }
+            // else if (method === 'Page.domContentEventFired') {
+            //     global.navFn.globalWait && global.navFn.globalWait(false);
+            // }
 
             // https://github.com/cyrus-and/chrome-har-capturer#fromlogurl-log-options
             if (![
@@ -416,6 +431,7 @@ async function createWindow () {
         icon: __dirname + '/assets/icon'
     });
 
+    wireLoad(win.webContents);
 
     global.setTitle = (title) => win.title = `Etomon${title ? ' - '+title : ''}`;
 
