@@ -5,7 +5,7 @@ const path = require('path');
 const cheerio = require('cheerio');
 const fetch =  require('node-fetch');
 const _ = require('lodash');
-const {XXHash3} = require('xxhash-addon');
+const { xxhash64 } = require('hash-wasm');
 
 const msgpack = require('@msgpack/msgpack');
 
@@ -45,18 +45,15 @@ async function getVersion() {
 
 
 
-function quickHash(filePath) {
-    const xxhash = new XXHash3(0);
-    let buf = Buffer.from(filePath, 'utf8');
-    buf = xxhash.hash(buf);
-    return buf.toString('base64').replace('=', '').replace('/', '-').replace('\\', '_');
+async function quickHash(filePath) {
+    return (await xxhash64(filePath)).replace('=', '').replace('/', '-').replace('\\', '_');
 }
 
-function filenames(str) {
+async function filenames(str) {
     str = str.replace(__dirname, '');
     return {
-        file: path.join(__dirname, 'assets', 'static', quickHash(str).toString('base64')),
-        meta: path.join(__dirname, 'assets', 'static', quickHash(str+'.eto').toString('base64'))
+        file: path.join(__dirname, 'assets', 'static', await quickHash(str)),
+        meta: path.join(__dirname, 'assets', 'static', await quickHash(str+'.eto'))
     }
 }
 
@@ -76,7 +73,7 @@ async function getItem(path) {
     if (noCache)
         return null;
 
-    let { file, meta: metaPath } = filenames(path);
+    let { file, meta: metaPath } = await filenames(path);
 
     if (!await fs.pathExists(file) || !await fs.pathExists(metaPath)) {
         return null;
@@ -103,7 +100,7 @@ async function putItem(path, item) {
     if (noCache)
         return;
 
-    let { file, meta } = filenames(path);
+    let { file, meta } = await filenames(path);
 
     await fs.ensureFile(file);
     await fs.ensureFile(meta);
@@ -172,7 +169,7 @@ async function getPathFromCache(url, globalWait = ((() => {})), branch = mode) {
             if (resp.status > 399 || resp.headers.get('etag') !== cachedItem.etag) {
                 cachedItem = null;
             } else {
-                let { meta: metaPath } = filenames(filePath);
+                let { meta: metaPath } = await filenames(filePath);
                 let meta = await fs.readFile(metaPath);
                 meta = msgpack.decode(meta);
                 meta.versionKey = versionKey;
