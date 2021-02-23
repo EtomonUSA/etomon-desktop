@@ -53,6 +53,7 @@ function quickHash(filePath) {
 }
 
 function filenames(str) {
+    str = str.replace(__dirname, '');
     return {
         file: path.join(__dirname, 'assets', 'static', quickHash(str).toString('base64')),
         meta: path.join(__dirname, 'assets', 'static', quickHash(str+'.eto').toString('base64'))
@@ -72,10 +73,14 @@ async function getItem(path) {
         isDev,
         noCache
     } = require('./version')();
-    if (noCache || !await fs.pathExists(path))
+    if (noCache)
         return null;
 
     let { file, meta: metaPath } = filenames(path);
+
+    if (!await fs.pathExists(file) || !await fs.pathExists(metaPath)) {
+        return null;
+    }
 
     let data = await fs.readFile(file);
     let meta = await fs.readFile(metaPath);
@@ -104,9 +109,9 @@ async function putItem(path, item) {
     await fs.ensureFile(meta);
     let data = item.data;
     await fs.writeFile(file, data);
-    let encodeItem = _.cloneDeep(item);
-    delete encodeItem.data;
-    await fs.writeFile(meta, msgpack.encode(encodeItem));
+    delete item.data;
+    let buf = Buffer.from(msgpack.encode(item));
+    fs.writeFileSync(meta, buf);
 }
 
 let lastSolidVersionKey;
@@ -141,7 +146,7 @@ async function getPathFromCache(url, globalWait = ((() => {})), branch = mode) {
         let filePath = path.join(cacheDir, url.pathname);
         let fileKey = filePath;
 
-        cachedItem = await getItem(fileKey);
+        cachedItem = await getItem(filePath);
 
         let domain = siteUriParsed.host;
         // if (siteUriParsed.protocol === ('https:') && domain === 'etomon.com') {
@@ -166,6 +171,13 @@ async function getPathFromCache(url, globalWait = ((() => {})), branch = mode) {
 
             if (resp.status > 399 || resp.headers.get('etag') !== cachedItem.etag) {
                 cachedItem = null;
+            } else {
+                let { meta: metaPath } = filenames(filePath);
+                let meta = await fs.readFile(metaPath);
+                meta = msgpack.decode(meta);
+                meta.versionKey = versionKey;
+                meta = Buffer.from(msgpack.encode(meta));
+                fs.writeFileSync(metaPath, meta);
             }
         }
 
@@ -184,7 +196,7 @@ async function getPathFromCache(url, globalWait = ((() => {})), branch = mode) {
 
             cachedItem = { mimeType, data, etag: resp.headers.get('etag'), versionKey};
             if (resp.status < 400) {
-                putItem(fileKey, cachedItem).catch(err => console.error(err.stack));
+                putItem(filePath, cachedItem).catch(err => console.error(err.stack));
             }
         }
     } catch (err) { e = err; } finally {
