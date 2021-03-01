@@ -46,7 +46,7 @@ async function getVersion() {
 
 
 async function quickHash(filePath) {
-    return (await xxhash64(filePath)).replace('=', '').replace('/', '-').replace('\\', '_');
+    return (await xxhash64(siteUri + '::' + filePath)).replace('=', '').replace('/', '-').replace('\\', '_');
 }
 
 async function filenames(str) {
@@ -157,7 +157,7 @@ async function getPathFromCache(url, globalWait = ((() => {})), branch = mode) {
         // }
         let finalUrl = Url.format(url);
 
-        if (cachedItem && cachedItem.versionKey !== versionKey) {
+        if (cachedItem && (cachedItem.versionKey !== versionKey || mode === 'local')) {
             if (!cachedItem.etag) cachedItem = null;
             let resp = await fetch(finalUrl, {
                 headers: {

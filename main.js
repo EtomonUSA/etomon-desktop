@@ -214,7 +214,7 @@ async function getLog() {
         });
     });
 
-    let data = Buffer.from(msgpack.encode(har));
+    let data = Buffer.from(JSON.stringify(har));
 
     return data;
 }
@@ -271,7 +271,6 @@ ipcBus.on('notifyCompat', (ev, ...args) => {
 
 ipcBus.on('webContentsMain', (ev, method, ...params) => {
     if (method === 'loadURL') {
-
         return win.loadURL(...params);
     }
     else {
@@ -283,9 +282,11 @@ function wireLoad(webContents) {
     if (webContents.isDestroyed()) return;
 
     webContents.once('did-start-loading', () => {
+        global.globalWaitLock = 1;
         global.navFn && global.navFn.globalWait && global.navFn.globalWait(true);
     });
     webContents.once('did-stop-loading', () => {
+        global.globalWaitLock = 0;
         global.navFn && global.navFn.globalWait && global.navFn.globalWait(false);
     });
 }
@@ -450,6 +451,13 @@ global.setFn = (opts) => {
         global.navFn = navFn = opts;
         global.navFn._globalWait = global.navFn.globalWait;
         global.navFn.globalWait = (on) => {
+            if (global.globalWaitLock === 1) {
+                global.globalWaitLock = 2;
+            }
+            else if (global.globalWaitLock === 2) {
+                return;
+            }
+
             sendIpcMessage('globalWait', on);
             return global.navFn && global.navFn.staticGlobalWait && global.navFn.staticGlobalWait(on);
         }
