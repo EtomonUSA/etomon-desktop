@@ -2,6 +2,35 @@ require('dotenv').config();
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
+const dns = require('dns').promises;
+const net = require('net');
+let netSetup = (async () => {
+    await Promise.all([
+        (async () => {
+            let records = await Promise.all([
+                dns.resolveNs(`dev-etomon.com`),
+                dns.resolveNs(`etomon.com`),
+                dns.resolveNs(`etomon.cn`)
+            ]);
+
+            let servers = [];
+            for (let s of records) {
+                for (let ss of s) {
+                    servers.push(...await dns.resolve4(ss));
+                }
+            }
+            servers.push('1.1.1.1', '2.2.2.2', '8.8.8.8', '8.8.4.4');
+            dns.setServers(servers);
+
+            await new Promise((resolve, reject) => {
+               net.connect(80, `etomon.cn`, (err) => {
+                   global.allowChina = !Boolean(err);
+                   resolve();
+               });
+            });
+        })()
+    ]);
+})();
 
 let paths = [
     // path.join('.', '.env'),
@@ -62,142 +91,157 @@ async function clearAndReload() {
     return win.loadURL(siteUri+'/nav');
 }
 
+
 const isMac = process.platform === 'darwin';
 let win;
-const template = [
-    // { role: 'appMenu' }
-    ...(isMac ? [{
-        label: app.name,
-        submenu: [
-            { role: 'about' },
-            { type: 'separator' },
-            { role: 'services' },
-            { type: 'separator' },
-            { role: 'hide' },
-            { role: 'hideothers' },
-            { role: 'unhide' },
-            { type: 'separator' },
-            { role: 'quit' }
-        ]
-    }] : []),
-    // { role: 'fileMenu' }
-    {
-        label: 'File',
-        submenu: [
-            isMac ? { role: 'close' } : { role: 'quit' }
-        ]
-    },
-    // { role: 'editMenu' }
-    {
-        label: 'Edit',
-        submenu: [
-            { role: 'undo' },
-            { role: 'redo' },
-            { type: 'separator' },
-            { role: 'cut' },
-            { role: 'copy' },
-            { role: 'paste' },
-            ...(isMac ? [
-                { role: 'pasteAndMatchStyle' },
-                { role: 'delete' },
-                { role: 'selectAll' },
-                { type: 'separator' },
-                {
-                    label: 'Speech',
-                    submenu: [
-                        { role: 'startSpeaking' },
-                        { role: 'stopSpeaking' }
-                    ]
-                }
-            ] : [
-                { role: 'delete' },
-                { type: 'separator' },
-                { role: 'selectAll' }
-            ])
-        ]
-    },
-    // { role: 'viewMenu' }
-    {
-        label: 'View',
-        submenu: [
-            { role: 'reload' },
-            { role: 'forceReload' },
-            { role: 'togglefullscreen' },
-            { type: 'separator' },
-            { role: 'resetZoom' },
-            { role: 'zoomIn' },
-            { role: 'zoomOut' },
-            { type: 'separator' },
-            { role: 'toggleDevTools' }
-        ].filter(Boolean)
-    },
-    // { role: 'windowMenu' }
-    {
-        label: 'Window',
-        submenu: [
-            { role: 'minimize' },
-            { role: 'zoom' },
-            ...(isMac ? [
-                { type: 'separator' },
-                { role: 'front' },
-                { type: 'separator' },
-                { role: 'window' }
-            ] : [
-                { role: 'close' }
-            ])
-        ]
-    },
-    {
-        role: 'help',
-        submenu: [
-            {
-                label: 'Help',
-                click: async () => {
-                    return ipcBus.emitAsync('webContents', void(0), 'loadURL', `${siteUri}/help`);
-                }
-            },
-            {
-                label: 'Contact Etomon',
-                click: async () => {
-                    return ipcBus.emitAsync('webContents', void(0), 'loadURL', `${siteUri}/contact-us`);
-                }
-            },
-            {
-                label: 'Switch to Production',
-                async click() {
-                    mode = process.env.MODE = 'production';
-                    siteUri = process.env.SITE_URI = urls[mode];
-                    await clearAndReload();
-                }
-            },
-            {
-                label: 'Switch to Development',
-                async click() {
-                    mode = process.env.MODE = 'docker-dev';
-                    siteUri = process.env.SITE_URI = urls[mode];
-                    await clearAndReload();
-                }
-            },
-            process.env.ALLOW_SWITCH_LOCAL ? {
-                label: 'Switch to Local',
-                async click() {
-                    mode = process.env.MODE = 'local';
-                    siteUri = process.env.SITE_URI = urls[mode];
-                    await clearAndReload();
-                }
-            } : void(0),
-            {
-                label: 'Clear Cache',
-                async click() {
-                    await clearAndReload();
-                }
-            }
-        ].filter(Boolean)
-    }
-]
 
-const menu = Menu.buildFromTemplate(template)
-Menu.setApplicationMenu(menu)
+
+netSetup.then(() => {
+    const template = [
+        // { role: 'appMenu' }
+        ...(isMac ? [{
+            label: app.name,
+            submenu: [
+                { role: 'about' },
+                { type: 'separator' },
+                { role: 'services' },
+                { type: 'separator' },
+                { role: 'hide' },
+                { role: 'hideothers' },
+                { role: 'unhide' },
+                { type: 'separator' },
+                { role: 'quit' }
+            ]
+        }] : []),
+        // { role: 'fileMenu' }
+        {
+            label: 'File',
+            submenu: [
+                isMac ? { role: 'close' } : { role: 'quit' }
+            ]
+        },
+        // { role: 'editMenu' }
+        {
+            label: 'Edit',
+            submenu: [
+                { role: 'undo' },
+                { role: 'redo' },
+                { type: 'separator' },
+                { role: 'cut' },
+                { role: 'copy' },
+                { role: 'paste' },
+                ...(isMac ? [
+                    { role: 'pasteAndMatchStyle' },
+                    { role: 'delete' },
+                    { role: 'selectAll' },
+                    { type: 'separator' },
+                    {
+                        label: 'Speech',
+                        submenu: [
+                            { role: 'startSpeaking' },
+                            { role: 'stopSpeaking' }
+                        ]
+                    }
+                ] : [
+                    { role: 'delete' },
+                    { type: 'separator' },
+                    { role: 'selectAll' }
+                ])
+            ]
+        },
+        // { role: 'viewMenu' }
+        {
+            label: 'View',
+            submenu: [
+                { role: 'reload' },
+                { role: 'forceReload' },
+                { role: 'togglefullscreen' },
+                { type: 'separator' },
+                { role: 'resetZoom' },
+                { role: 'zoomIn' },
+                { role: 'zoomOut' },
+                { type: 'separator' },
+                { role: 'toggleDevTools' }
+            ].filter(Boolean)
+        },
+        // { role: 'windowMenu' }
+        {
+            label: 'Window',
+            submenu: [
+                { role: 'minimize' },
+                { role: 'zoom' },
+                ...(isMac ? [
+                    { type: 'separator' },
+                    { role: 'front' },
+                    { type: 'separator' },
+                    { role: 'window' }
+                ] : [
+                    { role: 'close' }
+                ])
+            ]
+        },
+        {
+            role: 'help',
+            submenu: [
+                {
+                    label: 'Help',
+                    click: async () => {
+                        return ipcBus.emitAsync('webContents', void(0), 'loadURL', `${siteUri}/help`);
+                    }
+                },
+                {
+                    label: 'Contact Etomon',
+                    click: async () => {
+                        return ipcBus.emitAsync('webContents', void(0), 'loadURL', `${siteUri}/contact-us`);
+                    }
+                },
+                {
+                    label: 'Switch to Production',
+                    async click() {
+                        mode = process.env.MODE = 'production';
+                        siteUri = process.env.SITE_URI = urls[mode];
+                        await clearAndReload();
+                    }
+                },
+                {
+                    label: 'Switch to Development',
+                    async click() {
+                        mode = process.env.MODE = 'docker-dev';
+                        siteUri = process.env.SITE_URI = urls[mode];
+                        await clearAndReload();
+                    }
+                },
+                global.allowChina ? (
+                    {
+                        label: 'Switch to China',
+                        async click() {
+                            mode = process.env.MODE = 'china';
+                            siteUri = process.env.SITE_URI = urls[mode];
+                            await clearAndReload();
+                        }
+                    }
+                ) : void(0),
+                process.env.ALLOW_SWITCH_LOCAL ? {
+                    label: 'Switch to Local',
+                    async click() {
+                        mode = process.env.MODE = 'local';
+                        siteUri = process.env.SITE_URI = urls[mode];
+                        await clearAndReload();
+                    }
+                } : void(0),
+                {
+                    label: 'Clear Cache',
+                    async click() {
+                        await clearAndReload();
+                    }
+                }
+            ].filter(Boolean)
+        }
+    ]
+
+    const menu = Menu.buildFromTemplate(template)
+    Menu.setApplicationMenu(menu)
+})
 
 let log = global.log = [];
 const content = false;
