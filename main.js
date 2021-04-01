@@ -5,31 +5,7 @@ const fs = require('fs');
 const dns = require('dns').promises;
 const net = require('net');
 let netSetup = (async () => {
-    await Promise.all([
-        (async () => {
-            let records = await Promise.all([
-                dns.resolveNs(`dev-etomon.com`),
-                dns.resolveNs(`etomon.com`),
-                dns.resolveNs(`etomon.cn`)
-            ]);
-
-            let servers = [];
-            for (let s of records) {
-                for (let ss of s) {
-                    servers.push(...await dns.resolve4(ss));
-                }
-            }
-            servers.push('1.1.1.1', '2.2.2.2', '8.8.8.8', '8.8.4.4');
-            dns.setServers(servers);
-
-            await new Promise((resolve, reject) => {
-               net.connect(80, `etomon.cn`, (err) => {
-                   global.allowChina = !Boolean(err);
-                   resolve();
-               });
-            });
-        })()
-    ]);
+    global.allowChina = true;
 })();
 
 let paths = [
@@ -96,7 +72,7 @@ const isMac = process.platform === 'darwin';
 let win;
 
 
-netSetup.then(() => {
+// netSetup.then(() => {
     const template = [
         // { role: 'appMenu' }
         ...(isMac ? [{
@@ -241,7 +217,7 @@ netSetup.then(() => {
 
     const menu = Menu.buildFromTemplate(template)
     Menu.setApplicationMenu(menu)
-})
+// })
 
 let log = global.log = [];
 const content = false;
