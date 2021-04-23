@@ -2,7 +2,7 @@
 
 module.exports = () => {
     let urls = {
-        'docker-dev': 'https://dev.etomon.cn',
+        'docker-dev': 'https://dev-etomon.com',
         'local': 'http://localhost:4200',
         'production': 'https://etomon.com',
         'china': 'https://etomon.cn'
