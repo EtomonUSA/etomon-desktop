@@ -8,6 +8,17 @@ let netSetup = (async () => {
     global.allowChina = true;
 })();
 
+
+dns.setServers([
+    '205.251.197.132',
+    '205.251.195.21',
+    '205.251.192.79',
+    '1.1.1.1',
+    '2.2.2.2',
+    '8.8.8.8',
+    '8.8.4.4'
+])
+
 let paths = [
     // path.join('.', '.env'),
     // path.join('.', '.etomonrc'),
