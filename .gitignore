@@ -60,3 +60,4 @@ out
 .env
 .etomonrc
 assets/static
+assets/ips.json

@@ -4,20 +4,76 @@ const os = require('os');
 const fs = require('fs');
 const dns = require('dns').promises;
 const net = require('net');
-let netSetup = (async () => {
-    global.allowChina = true;
-})();
+
+const { EncodeTools } = require('@etomon/encode-tools');
+
+const enc = new EncodeTools({
+  serializationFormat: 'msgpack',
+  hashAlgorithm: 'xxhash64'
+})
+
+const origDns = require('dns').getServers();
+
+const ipPath = require('path').join(__dirname, 'assets', 'ips.json');
+
+const ips = require('fs').existsSync(ipPath) ? JSON.parse(require('fs').readFileSync(ipPath), 'utf8') : require('./cacher').cacheDns();
 
 
-dns.setServers([
-    '205.251.197.132',
-    '205.251.195.21',
-    '205.251.192.79',
-    '1.1.1.1',
-    '2.2.2.2',
-    '8.8.8.8',
-    '8.8.4.4'
-])
+
+const netSetup = (async () => {
+  const port = Number(process.env.DNS_PORT) || await (require('get-port'))();
+  const dns2 = require('dns2');
+
+  const { Packet } = dns2;
+
+  const server = dns2.createServer({
+    udp: true,
+    handle: (request, send, rinfo) => {
+      (async () => {
+        const response = Packet.createResponseFromRequest(request);
+        const [ question ] = request.questions;
+        const { name } = question;
+
+        if (ips[name]) {
+          for (const ip of [].concat(ips[name])) {
+            response.answers.push({
+              name,
+              type: Packet.TYPE.A,
+              class: Packet.CLASS.IN,
+              ttl: 300,
+              address: ip
+            });
+          }
+        }
+
+        if (!response.answers.length) {
+          const { UDPClient } = require('dns2');
+
+          const resolve = UDPClient({ dns: origDns[0] });
+
+          const rr = await resolve(
+            name
+          )
+
+          response.answers.push(...rr.answers);
+        }
+
+        send(response);
+      })().catch(err => console.error(err.stack));
+    }
+  });
+
+  (async () => {
+    server.listen({
+      udp: port
+    });
+
+    dns.setServers([
+      `127.0.0.1:${port}`
+    ]);
+  })().catch(err => console.error(err));
+  global.allowChina = true;
+});
 
 let paths = [
     // path.join('.', '.env'),
@@ -52,7 +108,6 @@ require('update-electron-app')();
 const { app, BrowserWindow, Menu, session, globalShortcut } = require('electron');
 const contextMenu = require('electron-context-menu');
 const chromeHarCapturer = require('@etomon/chrome-har-capturer');
-const msgpack = require('@msgpack/msgpack');
 const _ = require('lodash');
 const RequestHar = require('request-har').RequestHar;
 const harRequest = new RequestHar(require('request-promise-native'));
@@ -70,12 +125,14 @@ let {
 } = require('./version')();
 
 async function clearAndReload() {
-    await Promise.all([
-        win.webContents.session.clearStorageData().catch(err => console.error(err.stack)),
-        require('fs-extra').remove(path.join(__dirname, 'assets', 'static')).catch(err => console.error(err.stack))
-    ]);
-    require('./cacher').prepack().catch((err) => console.warn(err.stack));
-    return win.loadURL(siteUri+'/nav');
+  const C = require('./cacher');
+  await win.webContents.session.clearStorageData().catch(err => console.error(err.stack))
+  await win.loadURL(siteUri+'/nav');
+  (async () => {
+    const vk = (await C.getVersion()).versionKey;
+    await require('fs-extra').remove(path.join(__dirname, 'assets', 'static', vk));
+    await C.prepack();
+  })().catch((err) => console.warn(err.stack));
 }
 
 
@@ -83,7 +140,7 @@ const isMac = process.platform === 'darwin';
 let win;
 
 
-// netSetup.then(() => {
+netSetup().then(() => {
     const template = [
         // { role: 'appMenu' }
         ...(isMac ? [{
@@ -182,8 +239,8 @@ let win;
                         return ipcBus.emitAsync('webContents', void(0), 'loadURL', `${siteUri}/contact-us`);
                     }
                 },
-                {
-                    label: 'Switch to Production',
+               {
+                    label: 'Switch to Global',
                     async click() {
                         mode = process.env.MODE = 'production';
                         siteUri = process.env.SITE_URI = urls[mode];
@@ -191,36 +248,12 @@ let win;
                     }
                 },
                 {
-                    label: 'Switch to Development',
-                    async click() {
-                        mode = process.env.MODE = 'docker-dev';
-                        siteUri = process.env.SITE_URI = urls[mode];
-                        await clearAndReload();
-                    }
-                },
-                global.allowChina ? (
-                    {
-                        label: 'Switch to China',
-                        async click() {
-                            mode = process.env.MODE = 'china';
-                            siteUri = process.env.SITE_URI = urls[mode];
-                            await clearAndReload();
-                        }
-                    }
-                ) : void(0),
-                process.env.ALLOW_SWITCH_LOCAL ? {
-                    label: 'Switch to Local',
-                    async click() {
-                        mode = process.env.MODE = 'local';
-                        siteUri = process.env.SITE_URI = urls[mode];
-                        await clearAndReload();
-                    }
-                } : void(0),
-                {
-                    label: 'Clear Cache',
-                    async click() {
-                        await clearAndReload();
-                    }
+                  label: 'Switch to China',
+                  async click() {
+                    mode = process.env.MODE = 'china';
+                    siteUri = process.env.SITE_URI = urls[mode];
+                    await clearAndReload();
+                  }
                 }
             ].filter(Boolean)
         }
@@ -228,7 +261,7 @@ let win;
 
     const menu = Menu.buildFromTemplate(template)
     Menu.setApplicationMenu(menu)
-// })
+})
 
 let log = global.log = [];
 const content = false;
@@ -428,7 +461,7 @@ let optsHash;
 
 
 ipcMain.on('ipc-message', (ev, arg) => {
-    let rpcMessage = msgpack.decode(arg);
+    let rpcMessage = enc.deserializeObject(arg);
 
     ipcBus.emit(rpcMessage.method, ev, ...(rpcMessage.params || []));
 });
@@ -437,7 +470,7 @@ function sendIpcMessage(method, ...args) {
     const {webContents} = require('electron');
     let wcs = webContents.getAllWebContents();
     for (let wc of wcs) {
-        wc.send('ipc-message', msgpack.encode({
+        wc.send('ipc-message', enc.serializeObject({
             method,
             params: args,
             jsonrpc: '2.0'
@@ -493,6 +526,11 @@ global.setFn = (opts) => {
             return global.navFn && global.navFn.staticGlobalWait && global.navFn.staticGlobalWait(on);
         }
     }
+}
+
+for (const domain in ips) {
+  const ip = ips[domain];
+  app.commandLine.appendSwitch('host-resolver-rules', `MAP ${domain} ${ip}`);
 }
 
 app.whenReady().then(() => {

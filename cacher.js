@@ -5,9 +5,34 @@ const path = require('path');
 const cheerio = require('cheerio');
 const fetch =  require('node-fetch');
 const _ = require('lodash');
-const { xxhash64 } = require('hash-wasm');
+const { EncodeTools } = require('@etomon/encode-tools');
 
-const msgpack = require('@msgpack/msgpack');
+const enc = new EncodeTools({
+  serializationFormat: 'cbor',
+  hashAlgorithm: 'xxhash64'
+})
+
+function cacheDns() {
+  const dns2 = require('dns2');
+  const dns = new dns2();
+
+  const domains = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, 'ips.json')), 'utf8');
+
+  const output = {};
+
+  for (let domain of  domains) {
+    let ips;
+    if (Array.isArray(domain)) {
+      ips = [].concat(domain[1]);
+    } else {
+      // const result = await dns.resolveA(domain);
+      // ips = result.answers.map(a => a.address).filter(Boolean);
+    }
+    output[domain[0]] = ips.length ? ips : void (0);
+  }
+
+  return output;
+}
 
 const {
     urls,
@@ -31,6 +56,8 @@ async function get$(url = '/') {
     return cheerio.load(homepage);
 }
 
+const versions = new Map();
+
 async function getVersion() {
     const {
         urls,
@@ -40,20 +67,25 @@ async function getVersion() {
         isDev,
         noCache
     } = require('./version')();
-    return await (await fetch(siteUri+'/system/version')).json();
+    // if (versions.has(siteUri))
+    //   return versions.get(siteUri);
+
+    const version = await (await fetch(siteUri+'/system/version')).json();
+    version && versions.set(siteUri, version);
+    return version;
 }
 
 
 
 async function quickHash(filePath) {
-    return (await xxhash64(siteUri + '::' + filePath)).replace('=', '').replace('/', '-').replace('\\', '_');
+    return (await enc.hashString(siteUri + '::' + filePath)).replace('=', '').replace('/', '-').replace('\\', '_');
 }
 
 async function filenames(str) {
     str = str.replace(__dirname, '');
     return {
-        file: path.join(__dirname, 'assets', 'static', await quickHash(str)),
-        meta: path.join(__dirname, 'assets', 'static', await quickHash(str+'.eto'))
+        file: path.join(__dirname, 'assets', 'static', await getVersionKey(), await quickHash(str)),
+        meta: path.join(__dirname, 'assets', 'static', await getVersionKey(), await quickHash(str+'.eto'))
     }
 }
 
@@ -84,7 +116,7 @@ async function getItem(path) {
 
     return {
         data,
-        ...(msgpack.decode(meta))
+        ...(enc.deserializeObject(meta))
     };
 }
 
@@ -107,7 +139,7 @@ async function putItem(path, item) {
     let data = item.data;
     await fs.writeFile(file, data);
     delete item.data;
-    let buf = Buffer.from(msgpack.encode(item));
+    let buf = Buffer.from(enc.serializeObject(item));
     fs.writeFileSync(meta, buf);
 }
 
@@ -171,9 +203,9 @@ async function getPathFromCache(url, globalWait = ((() => {})), branch = mode) {
             } else {
                 let { meta: metaPath } = await filenames(filePath);
                 let meta = await fs.readFile(metaPath);
-                meta = msgpack.decode(meta);
+                meta = enc.deserializeObject(meta);
                 meta.versionKey = versionKey;
-                meta = Buffer.from(msgpack.encode(meta));
+                meta = Buffer.from(enc.serializeObject(meta));
                 fs.writeFileSync(metaPath, meta);
             }
         }
@@ -207,26 +239,35 @@ async function getPathFromCache(url, globalWait = ((() => {})), branch = mode) {
 
 async function prepack(pages = [
     '/',
-    '/nav'
+    '/nav',
+    '/help/teacher/'
 ]) {
-    let exclude = new Set();
-    for (let page of pages) {
-        let $ = await get$(page);
+    await Promise.all([
+      (async () => {
+        let delta = await cacheDns();
+        require('fs').writeFileSync(require('path').join(__dirname, 'assets', 'ips.json'), JSON.stringify(delta, null, 4));
+      })(),
+      (async () => {
+        let exclude = new Set();
+        for (let page of pages) {
+          let $ = await get$(page);
 
-        let files = $('link[rel="preload"],link[rel="prefetch"]');
+          let files = $('link[rel="preload"],link[rel="prefetch"]');
 
-        for (let ele of files) {
+          for (let ele of files) {
             let link = $(ele).attr('href') || $(ele).attr('src');
             if (exclude.has(link)) continue;
             else exclude.add(link);
-            // console.log(link);
+            console.log(link);
             if (!link || link.indexOf('/file') !== -1 || link.indexOf('public-photos') !== -1) {
-                continue;
+              continue;
             }
             try { await getPathFromCache(link); }
             catch (err){}
+          }
         }
-    }
+      })()
+    ])
 }
 
-module.exports = { getPathFromCache, prepack, get$ };
+module.exports = { getPathFromCache, prepack, get$, cacheDns, getVersion };

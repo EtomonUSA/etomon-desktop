@@ -5,7 +5,7 @@ module.exports = () => {
         'docker-dev': 'https://dev-etomon.com',
         'local': 'http://localhost:4200',
         'production': 'https://etomon.com',
-        'china': 'https://etomon.cn'
+        'china': 'https://www.etomon.cn'
     }
 
     let pkg = require('fs-extra').readJsonSync(require('path').join(__dirname, 'package.json'));
